@@ -5,6 +5,7 @@ Contact for support: adinabec [at] mit.edu
 """
 
 import tkinter
+from tkinter import ttk
 from matplotlib.figure import Figure 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,  NavigationToolbar2Tk 
 import numpy as np
@@ -19,7 +20,6 @@ import shelve as shv
 import os
 import elliptec
 import avaSpectrometer as ava 
-
 from scipy import signal
 
 from scipy.signal import find_peaks
