@@ -5,20 +5,18 @@ Contact for support: adinabec [at] mit.edu
 """
 
 import tkinter
+from tkinter import ttk
 from matplotlib.figure import Figure 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,  NavigationToolbar2Tk 
 import numpy as np
 import sys
-import shutil
+import os
+
 import pandas as pd
 import time
+import numpy as np
 import matplotlib.pyplot as plt
-import seabreeze
-from seabreeze.spectrometers import Spectrometer, list_devices
-import shelve as shv
-import os
-import elliptec
-import avaSpectrometer as ava 
+
 
 from scipy import signal
 
@@ -29,13 +27,15 @@ from scipy.ndimage import gaussian_filter1d
 sys.path.append(os.path.abspath(r"C:\PythonCoding\refractive-index-database"))
 
 def browse_location():
-    filename = tkinter.filedialog.askdirector()
+    filename = tkinter.filedialog.askdirectory()
     dirName_var.set(filename)
     print("set filename")
 
+
 def confirm_beam_blocked():
+    print("Get dark spectrum")
     blocked.grid_forget()
-    sys_vars["darkspectrum"] = spec.get_spectrum()
+    sys_vars["darkspectrum"] = np.random.rand(3, 8)
     print("unblock")
     Text_block.delete('1.0', tkinter.END)
     Text_block.insert(tkinter.END, "Please unblock the beam! \nClick confirm when your are done.")
@@ -57,7 +57,7 @@ def confirm_beam_unblocked():
     ax =  plt.subplot(111)
     canvas = FigureCanvasTkAgg(fig, 
                                master = root)
-    im = ax.imshow(data[:,sys_vars["idxLow"]:sys_vars["idxHigh"]],aspect = 'auto',origin='lower',extent=[500,800,sys_vars["posList"][0],sys_vars["posList"][-1]])
+    im = ax.imshow(data[:, sys_vars["idxLow"]:sys_vars["idxHigh"]],aspect = 'auto',origin='lower',extent=[500,800,sys_vars["posList"][0],sys_vars["posList"][-1]])
     im.set_clim(vmin=0, vmax=65000)
     
     timeAxis = np.zeros(len(sys_vars["posList"]))
@@ -67,11 +67,11 @@ def confirm_beam_unblocked():
     toolbar = NavigationToolbar2Tk(canvas, toolbarFrame)
     startT = time.time()    
     for i in range(len(sys_vars["posList"])):
-        ls.set_distance(sys_vars["posList"][i])
+        print("ls.set_distance(poslist[i])")
         time.sleep(0.05)
         # averaging over 10 spectra
         for j in range(sys_vars["avgFactor"]):
-            data[i,:] += spec.get_spectrum()
+            data[i,:] += np.random.rand((data.shape[-1]))*65000
         data[i,:] /= sys_vars["avgFactor"]
         #data[i,:] = spec.get_spectrum()
         timeAxis[i]=time.time()
@@ -88,10 +88,10 @@ def confirm_beam_unblocked():
     IntData = np.sum(data[:,sys_vars["idxLow"]:sys_vars["idxHigh"]],axis=1)
     IntDataSmoothed = gaussian_filter1d(IntData, sigma=6)
     peak =np.abs(IntDataSmoothed).argmax()
-    ls.set_distance(sys_vars["posList"][peak])
+    print("ls.set_distance(sys_vars[posList][peak])")
 
-    del(ls)
-    del(spec)
+    print("del(ls)")
+    print("del(spec)")
     plt.savefig(sys_vars["dirPath"] + "data.png")
     pd.DataFrame(data).to_csv(sys_vars["dirPath"] +"data.csv")
     pd.DataFrame(sys_vars["wavelength"]).to_csv(sys_vars["dirPath"] +"wavelength.csv")
@@ -99,7 +99,7 @@ def confirm_beam_unblocked():
     pd.DataFrame(timeAxis).to_csv(sys_vars["dirPath"] +"timeAxis.csv")
     pd.DataFrame(sys_vars["darkspectrum"]).to_csv(sys_vars["dirPath"] +"darkspectrum.csv")
 
-    shutil.copy(__file__, sys_vars["dirPath"]+'measurementScript.py') 
+    print("Shuthil")
     repeat.grid(row=18, column=10)
     
         # fig1, ax1 = plt.subplots(1,1)
@@ -146,7 +146,7 @@ def get_inputs():
     print("dir:", dirPath)
     print("intTime:", intTime, ", avgFactor:", avgFactor)
     
-    spec.set_integration_time(sys_vars["intTime"])
+    print("Set spectrometer int time")
     start_btn.grid_forget()
     #dirName_var.set("")
 
@@ -156,26 +156,26 @@ def main():
     posList = np.arange(5,40,0.2)
     sys_vars["posList"] = posList
     
-    spec = ava.spectrometer()
+    print("initialize spectrometer ")
     get_inputs() # this also sets the spectrometer integration time
     
     # Get wavelength axis
-    wavelength = spec.get_wavelengths()
-    sys_vars["wavelength"] = wavelength
+    print("get wavelength range from spectrometers")
+    sys_vars["wavelength"] =  np.linspace(600, 2000, 100)
 
     # Get wavelength axis
-    idxLow = np.abs(wavelength-500).argmin() ## consider changing 
-    idxHigh = np.abs(wavelength-850).argmin()
+    idxLow = np.abs(sys_vars["wavelength"] -500).argmin() ## consider changing 
+    idxHigh = np.abs(sys_vars["wavelength"] -850).argmin()
     sys_vars["idxLow"] = idxLow 
     sys_vars["idxHigh"] = idxHigh 
     
 
     # Initialize the controller with the correct device name
-    controller = elliptec.Controller('COM4')  # Adjust device name if needed
-    ls = elliptec.Linear(controller)
+    print("set controller")
+    print("assign controller")
 
     # Home the linear stage before usage
-    ls.home()
+    print("ls.home()")
     
     attn_label.grid(row=6)
     Text_block.grid(row=7, column=1)
@@ -206,7 +206,7 @@ if __name__ == '__main__':
     sys_vars = {}
 
     tkinter.Label(root, text='Directory name').grid(row=0)
-    browse_btn = tkinter.Button(root, text="Browse", command=browse_location).grid(row=0, column=2)
+    browse_btn = tkinter.Button(root, text="Browse", command=browse_location).grid(row=0, column=2) 
     tkinter.Label(root, text='Integration time (s)').grid(row=1)
     tkinter.Label(root, text='Averaging factor').grid(row=2)
     e1 = tkinter.Entry(root, textvariable=dirName_var)
