@@ -100,7 +100,8 @@ def confirm_beam_unblocked():
     pd.DataFrame(sys_vars["darkspectrum"]).to_csv(sys_vars["dirPath"] +"darkspectrum.csv")
 
     print("Shuthil")
-    repeat.grid(row=18, column=10)
+    repeat.grid(row=18, column=0)
+    dscan.grid(row=18, column=1)
     
         # fig1, ax1 = plt.subplots(1,1)
         
@@ -120,6 +121,7 @@ def reset_all():
     sys_vars["canvas"].get_tk_widget().grid_forget()
     sys_vars["toolbarFrame"] .grid_forget()
     repeat.grid_forget()
+    dscan.grid_forget()
     progress_label.grid_forget()
 
 
@@ -136,11 +138,15 @@ def get_inputs():
     dirPath = dirName + "/"
     intTime = intTime_var.get()
     avgFactor = avgFactor_var.get()
+    min_insert = min_insert_var.get()
+    max_insert = max_insert_var.get()
 
     sys_vars["dirPath"] = dirPath
     sys_vars["intTime"] = intTime
     sys_vars["avgFactor"] = avgFactor
     sys_vars["dirName"] = dirName
+    sys_vars["min_insert"] = min_insert
+    sys_vars["max_insert"] = max_insert
 
     print("entered variables:") 
     print("dir:", dirPath)
@@ -152,12 +158,11 @@ def get_inputs():
 
 
 def main():
-
-    posList = np.arange(5,40,0.2)
-    sys_vars["posList"] = posList
     
     print("initialize spectrometer ")
     get_inputs() # this also sets the spectrometer integration time
+    posList = np.arange(sys_vars["min_insert"], sys_vars["max_insert"], 0.2) ## Hard coded 0.2 for insertion increments. 
+    sys_vars["posList"] = posList
     
     # Get wavelength axis
     print("get wavelength range from spectrometers")
@@ -181,7 +186,10 @@ def main():
     Text_block.grid(row=7, column=1)
     Text_block.insert(tkinter.END, "Please block the beam! \nClick confirm when your are done.")
     blocked.grid(row=8,column=1)
-    
+
+def do_dscan_retrieval():
+    print("Doing D-scan retreival")
+    pass
 
 if __name__ == '__main__':
     root = tkinter.Tk()
@@ -202,6 +210,8 @@ if __name__ == '__main__':
     dirName_var = tkinter.StringVar()
     intTime_var = tkinter.DoubleVar()
     avgFactor_var = tkinter.IntVar()
+    min_insert_var = tkinter.IntVar()
+    max_insert_var = tkinter.IntVar()
 
     sys_vars = {}
 
@@ -209,23 +219,36 @@ if __name__ == '__main__':
     browse_btn = tkinter.Button(root, text="Browse", command=browse_location).grid(row=0, column=2) 
     tkinter.Label(root, text='Integration time (s)').grid(row=1)
     tkinter.Label(root, text='Averaging factor').grid(row=2)
+    tkinter.Label(root, text='Wedge insertion (mm)').grid(row=3)
+    tkinter.Label(root, text='min', justify="right").grid(row=3, column=1)
+    tkinter.Label(root, text='max').grid(row=3, column=3)
+
     e1 = tkinter.Entry(root, textvariable=dirName_var)
     e2 = tkinter.Entry(root, textvariable=intTime_var)
     e3 = tkinter.Entry(root, textvariable=avgFactor_var)
+    e4 = tkinter.Entry(root, textvariable=min_insert_var, width=5)
+    e5 = tkinter.Entry(root, textvariable=max_insert_var, width=5)
     e1.grid(row=0, column=1)
     e2.grid(row=1, column=1)
     e3.grid(row=2, column=1)
+    e4.grid(row=3, column=2)
+    e5.grid(row=3, column=4)
 
     start_btn=tkinter.Button(root,text = 'Start acquisition', command = main)
     start_btn.grid(row=5,column=1)
 
     blocked = tkinter.Button(root, text = 'Confirm', command = confirm_beam_blocked)
-    attn_label = tkinter.Label(root, text = "Attention!")
-    Text_block = tkinter.Text(root, height = 5, width = 60)
+    attn_label = tkinter.Label(root, text = "Attention!", font=('Helvetica',12, 'bold'))
+    Text_block = tkinter.Text(root, height = 5, width = 45)
     unblocked =tkinter.Button(root,text = 'Confirm', command = confirm_beam_unblocked)
-    repeat =tkinter.Button(root,text = 'Done', command = reset_all)
+    repeat = tkinter.Button(root,text = 'New acquisition', command = reset_all)
+    dscan = tkinter.Button(root, text = 'Phase retrival', command = do_dscan_retrieval)
     progress = ttk.Progressbar(root, length=100, mode='determinate')
     progress_label = tkinter.Label(root, text='Progress')
+
+    ## initialize default insertion width
+    min_insert_var.set(5)
+    max_insert_var.set(40)
 
     tkinter.mainloop()
 
