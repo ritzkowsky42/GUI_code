@@ -29,13 +29,13 @@ from scipy.ndimage import gaussian_filter1d
 sys.path.append(os.path.abspath(r"C:\PythonCoding\refractive-index-database"))
 
 def browse_location():
-    filename = tkinter.filedialog.askdirector()
+    filename = tkinter.filedialog.askdirectory()
     dirName_var.set(filename)
     print("set filename")
 
 def confirm_beam_blocked():
     blocked.grid_forget()
-    sys_vars["darkspectrum"] = spec.get_spectrum()
+    sys_vars["darkspectrum"] = sys_vars["spec"].get_spectrum()
     print("unblock")
     Text_block.delete('1.0', tkinter.END)
     Text_block.insert(tkinter.END, "Please unblock the beam! \nClick confirm when your are done.")
@@ -67,11 +67,11 @@ def confirm_beam_unblocked():
     toolbar = NavigationToolbar2Tk(canvas, toolbarFrame)
     startT = time.time()    
     for i in range(len(sys_vars["posList"])):
-        ls.set_distance(sys_vars["posList"][i])
+        sys_vars["ls"].set_distance(sys_vars["posList"][i])
         time.sleep(0.05)
         # averaging over 10 spectra
         for j in range(sys_vars["avgFactor"]):
-            data[i,:] += spec.get_spectrum()
+            data[i,:] += sys_vars["spec"].get_spectrum()
         data[i,:] /= sys_vars["avgFactor"]
         #data[i,:] = spec.get_spectrum()
         timeAxis[i]=time.time()
@@ -88,10 +88,8 @@ def confirm_beam_unblocked():
     IntData = np.sum(data[:,sys_vars["idxLow"]:sys_vars["idxHigh"]],axis=1)
     IntDataSmoothed = gaussian_filter1d(IntData, sigma=6)
     peak =np.abs(IntDataSmoothed).argmax()
-    ls.set_distance(sys_vars["posList"][peak])
+    sys_vars["ls"].set_distance(sys_vars["posList"][peak])
 
-    del(ls)
-    del(spec)
     plt.savefig(sys_vars["dirPath"] + "data.png")
     pd.DataFrame(data).to_csv(sys_vars["dirPath"] +"data.csv")
     pd.DataFrame(sys_vars["wavelength"]).to_csv(sys_vars["dirPath"] +"wavelength.csv")
@@ -113,9 +111,9 @@ def confirm_beam_unblocked():
     return
 
 def reset_all():
-    dirName_var.set("")
-    intTime_var.set(0)
-    avgFactor_var.set(0)
+    #dirName_var.set("")
+    #intTime_var.set(0)
+    #avgFactor_var.set(0)
     start_btn.grid(row=5,column=1)
     progress.grid_forget()
     sys_vars["canvas"].get_tk_widget().grid_forget()
@@ -156,14 +154,21 @@ def get_inputs():
     start_btn.grid_forget()
     #dirName_var.set("")
 
+def on_gui_close():
+    if "ls" in sys_vars:
+        del sys_vars["ls"]
+    if "spec" in sys_vars:
+        del sys_vars["spec"]
 
 def main():
 
+    global spec 
+    spec = ava.spectrometer()
+    sys_vars["spec"] = spec
+    
     get_inputs() # this also sets the spectrometer integration time
     posList = np.arange(sys_vars["min_insert"], sys_vars["max_insert"], 0.2)
     sys_vars["posList"] = posList
-    
-    spec = ava.spectrometer()
     
     
     # Get wavelength axis
@@ -179,7 +184,10 @@ def main():
 
     # Initialize the controller with the correct device name
     controller = elliptec.Controller('COM4')  # Adjust device name if needed
+    global ls
+
     ls = elliptec.Linear(controller)
+    sys_vars["ls"] = ls
 
     # Home the linear stage before usage
     ls.home()
@@ -251,8 +259,12 @@ if __name__ == '__main__':
     ## initialize default insertion width
     min_insert_var.set(5)
     max_insert_var.set(40)
+    root.protocol("WM_DELETE_WINDOW", on_gui_close)
     
     tkinter.mainloop()
 
 
+# #FXIME make closing 
+#     del(sys_vars["ls"])
+#     del(sys_vars["spec"])
   
